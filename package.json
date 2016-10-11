@@ -1,0 +1,37 @@
+{
+  "name": "swagger-browser",
+  "version": "1.0.0",
+  "description": "A tool to manage an organizations Swagger documents",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "babel src/ -Dd build/",
+    "lint": "eslint .",
+    "start": "node build/index.js",
+    "test": "babel-node ./node_modules/.bin/tape tests/*.js",
+    "test-some": "babel-node ./node_modules/.bin/tape",
+    "start-dev": "babel-node src/index.js",
+    "start-watch": "nodemon --exec babel-node src/index.js"
+  },
+  "keywords": [
+    "github",
+    "swagger",
+    "documentation",
+    "collaboration"
+  ],
+  "author": "GasBuddy",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "express": "^4.14.0",
+    "github": "^5.0.0",
+    "lowdb": "^0.13.1",
+    "superagent": "^2.3.0",
+    "tar.gz": "^1.0.5",
+    "winston": "^2.2.0"
+  },
+  "devDependencies": {
+    "babel-preset-gasbuddy": "^1.0.0",
+    "babel-register": "^6.16.3",
+    "eslint-config-gasbuddy": "^1.0.2"
+  }
+}
