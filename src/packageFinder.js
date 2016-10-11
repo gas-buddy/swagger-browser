@@ -11,12 +11,7 @@ const github = new GitHubApi({
   },
   timeout: 5000,
 });
-
-
-github.authenticate({
-  type: 'token',
-  token: process.env.GITHUB_TOKEN,
-});
+let authed = false;
 
 function fetchPackage(pkg) {
   winston.info(`Fetching ${pkg.name}@${pkg.version}`);
@@ -33,7 +28,7 @@ function fetchPackage(pkg) {
           const bufs = [];
           found = true;
           e.on('data', d => bufs.push(d)).on('end', () => {
-            accept(Buffer.concat(bufs).toString('utf8'));
+            accept(JSON.parse(Buffer.concat(bufs).toString('utf8')));
           });
         }
       });
@@ -94,6 +89,14 @@ async function getApiSpec(org, repo) {
 }
 
 export default async function getSwaggerDocuments(org) {
+  if (!authed) {
+    authed = true;
+    github.authenticate({
+      type: 'token',
+      token: process.env.GITHUB_TOKEN,
+    });
+  }
+
   const db = lowdb('db.json');
 
   const repos = await github.repos.getForOrg({ org, per_page: 100 });

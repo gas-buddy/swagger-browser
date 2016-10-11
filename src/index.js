@@ -1,6 +1,8 @@
 import winston from 'winston';
+import express from 'express';
 import findPackages from './packageFinder';
 import detectNpmToken from './npmToken';
+import registerApi from './handlers';
 
 global.Promise = require('bluebird');
 
@@ -8,12 +10,63 @@ if (!process.env.NPM_TOKEN) {
   detectNpmToken();
 }
 
-const org = 'gas-buddy';
+let org = process.env.GITHUB_ORG;
 
-findPackages(org)
-  .then((packages) => {
-    winston.info(`${Object.getOwnPropertyNames(packages || []).length} packages read`);
-  })
-  .catch((error) => {
-    winston.error('Startup failed', error);
-  });
+async function refreshPackages() {
+  if (process.env.NPM_TOKEN && process.env.GITHUB_TOKEN && process.env.GITHUB_ORG) {
+    winston.info('Refreshing package information');
+    const packages = await findPackages(org);
+    if (packages) {
+      winston.info(`${Object.getOwnPropertyNames(packages || []).length} packages read`);
+      app.set('swagger-packages', packages);
+    }
+    // 10 minute refresh
+    setTimeout(refreshPackages, 10 * 60000);
+  }
+}
+
+const app = express();
+
+refreshPackages();
+
+app.get('/', (req, res, next) => {
+  if (!process.env.NPM_TOKEN || !process.env.GITHUB_TOKEN || !process.env.GITHUB_ORG) {
+    res.send(`
+    <html>
+    <head>
+      <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/base-min.css">
+      <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head><body>
+      <div style="margin-left: 50px;">
+        <h1>Configuration Needed</h1>
+        <p>You must set the organization, github token and npm token for this browser.</p>
+        <form class="pure-form pure-form-aligned" action="/" method="post">
+        <fieldset>
+        <div class="pure-control-group" ${process.env.GITHUB_ORG ? 'style="display:none;"':''}>
+          <label for="org">GitHub Organization</label><input type="text" name="org"/>
+        </div>
+        <div class="pure-control-group" ${process.env.GITHUB_TOKEN ? 'style="display:none;"':''}>
+          <label for="org">GITHUB_TOKEN</label><input type="password" name="github"/>
+        </div>
+        <div class="pure-control-group" ${process.env.NPM_TOKEN ? 'style="display:none;"':''}>
+          <label for="org">NPM_TOKEN</label><input type="password" name="npm"/>
+        </div>
+        <div class="pure-controls"><button type="submit" class="pure-button pure-button-primary">Submit</div>
+        </fieldset>
+        </form>
+      </div>
+    </body>
+    </html>
+        `);
+  } else {
+    next('route');
+  }
+});
+
+app.use(express.static('swagger-ui/dist'));
+const port = process.env.PORT || 8080;
+registerApi(app);
+app.listen(port, () => {
+  winston.info('swagger-browser listening', { port });
+});

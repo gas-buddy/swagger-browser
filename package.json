@@ -30,6 +30,7 @@
     "winston": "^2.2.0"
   },
   "devDependencies": {
+    "babel-cli": "^6.16.0",
     "babel-preset-gasbuddy": "^1.0.0",
     "babel-register": "^6.16.3",
     "eslint-config-gasbuddy": "^1.0.2"
