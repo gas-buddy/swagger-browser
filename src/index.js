@@ -57,11 +57,12 @@ app.get('/', (req, res, next) => {
     </head><body>
       <div style="margin-left: 50px;">
         <h1>Configuration Needed</h1>
-        <p>You must set the organization, github token and npm token for this browser.</p>
+        <p>You must set the organization, github token and npm token for this swagger-browser.
+        These can be read from the environment on browser startup using the specified variables.</p>
         <form class="pure-form pure-form-aligned" action="/" method="post">
         <fieldset>
         <div class="pure-control-group" ${process.env.GITHUB_ORG ? 'style="display:none;"' : ''}>
-          <label for="org">GitHub Organization</label><input type="text" name="org"/>
+          <label for="org">GITHUB_ORG</label><input type="text" name="org"/>
         </div>
         <div class="pure-control-group" ${process.env.GITHUB_TOKEN ? 'style="display:none;"' : ''}>
           <label for="org">GITHUB_TOKEN</label><input type="password" name="github"/>
