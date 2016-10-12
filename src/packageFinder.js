@@ -3,7 +3,6 @@ import request from 'superagent';
 import winston from 'winston';
 import targz from 'tar.gz';
 import lowdb from 'lowdb';
-import bluebird from 'bluebird';
 
 const github = new GitHubApi({
   headers: {
