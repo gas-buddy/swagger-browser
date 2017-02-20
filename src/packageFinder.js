@@ -3,6 +3,7 @@ import request from 'superagent';
 import winston from 'winston';
 import targz from 'tar.gz';
 import lowdb from 'lowdb';
+import { spawn } from 'child_process';
 
 const github = new GitHubApi({
   headers: {
@@ -12,12 +13,47 @@ const github = new GitHubApi({
 });
 let authed = false;
 
-function fetchPackage(pkg) {
-  winston.info(`Fetching ${pkg.name}@${pkg.version}`);
+function latestVersionOfPackage(pkg) {
+  return new Promise((accept, reject) => {
+
+    let child = spawn('npm', ['view', `${pkg.name}`, 'versions']);
+
+    let versionData = null;
+    child.stdout.on('data', (data) => {
+      versionData = data;
+    })
+
+    child.on('exit', (code) => {
+      if (code == 0 && versionData) {
+        let availableVersions = JSON.parse(versionData.toString().replace(/'/g, '"'));
+        let latestVersion = availableVersions[availableVersions.length - 1];
+        winston.info(`Found ${latestVersion} as latest version of ${pkg.name}`);
+        accept(availableVersions[availableVersions.length - 1]);
+      } else {
+        winston.warn(`Unable to fetch version data for ${pkg.name}`);
+        reject({ code });
+      }
+    });
+  });
+}
+
+async function fetchPackage(pkg) {
+  let version = null;
+  try {
+    version = await latestVersionOfPackage(pkg);
+    if (version !== pkg.version) {
+      winston.warn(`${pkg.name} API is out of date. Master branch version: ${pkg.version} | Last published version: ${version})`);
+    }
+  } catch (exception) {
+    return Promise.reject(`Could not find published API for ${pkg.name}. Please publish to NPM to view documentation.`)
+  }
+
+  winston.info(`Fetching ${pkg.name}@${version}`);
+
   return new Promise((accept, reject) => {
     try {
       const [scope, name] = pkg.name.split('/');
-      const url = `https://registry.npmjs.org/${pkg.name}/-/${name || scope}-${pkg.version}.tgz`;
+      const url = `https://registry.npmjs.org/${pkg.name}/-/${name || scope}-${version}.tgz`;
       const tgparse = targz().createParseStream();
       const targetFile = `package/${pkg.main}`;
       let found = false;
@@ -27,7 +63,8 @@ function fetchPackage(pkg) {
           const bufs = [];
           found = true;
           e.on('data', d => bufs.push(d)).on('end', () => {
-            accept(JSON.parse(Buffer.concat(bufs).toString('utf8')));
+            let json = JSON.parse(Buffer.concat(bufs).toString('utf8'));
+            accept(json);
           });
         }
       });
@@ -41,7 +78,7 @@ function fetchPackage(pkg) {
         .set('Authorization', `Bearer ${process.env.NPM_TOKEN}`)
         .on('response', (res) => {
           if (res.status !== 200) {
-            winston.warn(`Unable to fetch npm package for ${pkg.name}@${pkg.version}`);
+            winston.warn(`Unable to fetch npm package for ${pkg.name}@${version}`);
             accept();
             req.abort();
           }
