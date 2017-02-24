@@ -24,9 +24,9 @@
     "bluebird": "^3.4.6",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
-    "github": "^5.0.0",
-    "lowdb": "^0.13.1",
-    "superagent": "^2.3.0",
+    "github": "^9.0.0",
+    "lowdb": "^0.15.5",
+    "superagent": "^3.5.0",
     "tar.gz": "^1.0.5",
     "winston": "^2.2.0"
   },
